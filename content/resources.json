@@ -1,0 +1,79 @@
+{
+    "python_basics": [
+      "https://www.python.org/about/gettingstarted/",
+      "https://docs.python.org/3/tutorial/",
+      "https://realpython.com/python-first-steps/",
+      "https://www.learnpython.org/",
+      "https://python.org/"
+    ],
+    "python_videos": [
+      "Python for Beginners - Programming with Mosh (YouTube)",
+      "Learn Python - Full Course for Beginners - freeCodeCamp (YouTube)",
+      "Python Tutorial for Beginners - Corey Schafer (YouTube)",
+      "Python Crash Course - Traversy Media (YouTube)",
+      "Python Programming Tutorial - Derek Banas (YouTube)"
+    ],
+    "practice_sites": [
+      "https://codingbat.com/python",
+      "https://www.hackerrank.com/domains/python",
+      "https://www.codewars.com/",
+      "https://python.org/shell/",
+      "https://replit.com/languages/python3",
+      "https://trinket.io/python"
+    ],
+    "python_games": [
+      "https://reeborg.ca/reeborg.html",
+      "https://checkio.org/",
+      "https://codecombat.com/",
+      "https://py.checkio.org/",
+      "https://www.codingame.com/start"
+    ],
+    "kid_friendly_resources": [
+      "https://scratch.mit.edu/ (Visual programming introduction)",
+      "https://hourofcode.com/us/learn",
+      "https://code.org/learn",
+      "https://www.tynker.com/",
+      "https://kodable.com/"
+    ],
+    "python_books": [
+      "Python Crash Course by Eric Matthes",
+      "Automate the Boring Stuff with Python by Al Sweigart",
+      "Python for Kids by Jason Briggs",
+      "Learn to Program with Python by Irv Kalb",
+      "Coding Games in Python by Carol Vorderman"
+    ],
+    "interactive_tutorials": [
+      "https://www.codecademy.com/learn/learn-python-3",
+      "https://www.datacamp.com/courses/intro-to-python-for-data-science",
+      "https://www.sololearn.com/Course/Python/",
+      "https://www.w3schools.com/python/",
+      "https://python-course.eu/"
+    ],
+    "python_cheat_sheets": [
+      "https://www.pythoncheatsheet.org/",
+      "https://github.com/gto76/python-cheatsheet",
+      "https://www.datacamp.com/community/data-science-cheatsheets",
+      "https://perso.limsi.fr/pointal/_media/python:cours:mementopython3-english.pdf"
+    ],
+    "python_communities": [
+      "https://www.reddit.com/r/learnpython/",
+      "https://stackoverflow.com/questions/tagged/python",
+      "https://discord.com/invite/python",
+      "https://python.org/community/",
+      "https://dev.to/t/python"
+    ],
+    "variables_and_data_types": [
+      "https://realpython.com/python-variables/",
+      "https://www.w3schools.com/python/python_variables.asp",
+      "https://docs.python.org/3/tutorial/introduction.html#using-python-as-a-calculator"
+    ],
+    "functions": [
+      "https://realpython.com/defining-your-own-python-function/",
+      "https://www.w3schools.com/python/python_functions.asp",
+      "https://docs.python.org/3/tutorial/controlflow.html#defining-functions"
+    ],
+    "loops": [
+      "https://realpython.com/python-for-loop/",
+      "https://www.w3schools.com"
+    ]
+}
