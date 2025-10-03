@@ -89,6 +89,19 @@ class DatabaseHandler:
                 )
             """)
             
+            # User settings table - for parental controls and other user preferences
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    setting_key TEXT NOT NULL,
+                    setting_value TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, setting_key)
+                )
+            """)
+            
             conn.commit()
     
     def store_modules(self, modules: List[Dict[str, Any]]):
@@ -314,8 +327,8 @@ class DatabaseHandler:
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 user_id, module_id, 
-                content if role == 'user' else '',  # question (user input)
-                content if role == 'user' else '',  # user_response
+                
+                content if role == 'user' else '','',  # user_response
                 content if role == 'assistant' else '',  # bot_response
                 f"{interaction_type}_{role}",  # interaction_type with role
                 3  # default understanding level
@@ -330,7 +343,7 @@ class DatabaseHandler:
                 SELECT question, user_response, bot_response, interaction_type, created_at
                 FROM learning_interactions 
                 WHERE user_id = ? AND module_id = ? 
-                AND interaction_type LIKE 'chat_%'
+                AND interaction_type LIKE 'socratic_%'
                 ORDER BY created_at ASC
                 LIMIT ?
             """, (user_id, module_id, limit))
@@ -427,3 +440,26 @@ class DatabaseHandler:
             """.format(days_old))
             
             conn.commit()
+    
+    def save_user_settings(self, user_id: str, setting_key: str, setting_value: str):
+        """Save user settings to database"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO user_settings 
+                (user_id, setting_key, setting_value, updated_at)
+                VALUES (?, ?, ?, ?)
+            """, (user_id, setting_key, setting_value, datetime.now()))
+            conn.commit()
+    
+    def get_user_settings(self, user_id: str, setting_key: str) -> Optional[str]:
+        """Get user settings from database"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT setting_value FROM user_settings 
+                WHERE user_id = ? AND setting_key = ?
+            """, (user_id, setting_key))
+            
+            result = cursor.fetchone()
+            return result[0] if result else None

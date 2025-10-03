@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import json
 from typing import Optional, Dict, List
 
-# Import custom modules (keeping your existing imports)
+# Import custom modules
 from database.db_handler import DatabaseHandler
 from content.github_parser import GitHubParser
 from content.prompts import PromptManager
@@ -12,7 +12,19 @@ from agents.socratic_tutor import SocraticTutor
 from agents.quiz_generator import QuizGenerator
 from agents.code_evaluator import CodeEvaluator
 from utils.openai_client import OpenAIClient
+# Create persistent user ID
+USER_ID_FILE = '.studybot_data/current_user.txt'
+os.makedirs('.studybot_data', exist_ok=True)
 
+def get_or_create_user_id():
+    if os.path.exists(USER_ID_FILE):
+        with open(USER_ID_FILE, 'r') as f:
+            return f.read().strip()
+    else:
+        user_id = f"user_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        with open(USER_ID_FILE, 'w') as f:
+            f.write(user_id)
+        return user_id
 # Page configuration
 st.set_page_config(
     page_title="StudyBot - Learn Python with AI",
@@ -26,7 +38,7 @@ st.set_page_config(
     }
 )
 
-# Enhanced CSS with modern, animated design
+# Enhanced CSS with FIXES for chat input covering and kid-friendly design
 st.markdown("""
 <style>
 /* Modern Color Palette */
@@ -54,10 +66,50 @@ st.markdown("""
     100% { background-position: 0% 50%; }
 }
 
-/* Main Container */
+/* === FIX 1: Main Container with bottom padding for chat input === */
 .main .block-container {
     padding: 2rem;
+    padding-bottom: 150px !important;
     max-width: 1400px;
+}
+
+/* === FIX 2: Chat container spacing === */
+div[data-testid="stChatMessageContainer"] {
+    padding-bottom: 120px !important;
+    margin-bottom: 20px;
+}
+
+/* === FIX 3: Kid-friendly bigger text in chat === */
+.stChatMessage {
+    font-size: 20px !important;
+    line-height: 1.8 !important;
+    padding: 1.5rem !important;
+    border-radius: 20px !important;
+    margin: 1rem 0 !important;
+}
+
+/* === FIX 4: Colorful, friendly chat input === */
+.stChatInput {
+    margin-top: 20px;
+}
+
+.stChatInput textarea {
+    font-size: 18px !important;
+    border-radius: 25px !important;
+    border: 3px solid #48bb78 !important;
+    padding: 15px 20px !important;
+    min-height: 60px !important;
+}
+
+/* === FIX 5: Fun avatar colors === */
+div[data-testid="chatAvatarIcon-assistant"] {
+    background: linear-gradient(135deg, #48bb78, #38a169) !important;
+    border-radius: 50%;
+}
+
+div[data-testid="chatAvatarIcon-user"] {
+    background: linear-gradient(135deg, #4299e1, #2b6cb0) !important;
+    border-radius: 50%;
 }
 
 /* Glass-morphism Cards */
@@ -158,21 +210,16 @@ st.markdown("""
     font-weight: bold;
     font-size: 0.9rem;
     transition: width 1s ease;
-    animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-    0% { background-position: -1000px 0; }
-    100% { background-position: 1000px 0; }
 }
 
 /* Chat Messages */
 .chat-message {
-    padding: 1.2rem;
-    border-radius: 18px;
+    padding: 1.5rem;
+    border-radius: 20px;
     margin: 1rem 0;
     animation: fadeIn 0.5s ease;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    font-size: 18px;
 }
 
 @keyframes fadeIn {
@@ -322,6 +369,7 @@ st.markdown("""
 @media (max-width: 768px) {
     .main .block-container {
         padding: 1rem 0.5rem;
+        padding-bottom: 180px !important;
     }
     
     .main-header h1 {
@@ -331,9 +379,13 @@ st.markdown("""
     .stat-value {
         font-size: 1.8rem;
     }
+    
+    .stChatMessage {
+        font-size: 18px !important;
+    }
 }
 
-/* Input Fields */
+/* Input Fields - iOS fix */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea {
     font-size: 16px !important;
@@ -385,36 +437,87 @@ st.markdown("""
 
 
 class ParentalControlManager:
-    """Manages parental controls and monitoring"""
+    """Manages parental controls and monitoring - FIX: Now saves to database"""
     
     def __init__(self, db: DatabaseHandler):
         self.db = db
         
     def initialize_parental_settings(self, user_id: str):
-        """Initialize parental control settings for a user"""
+        """Initialize parental control settings - Load from DB if exists"""
         if 'parental_settings' not in st.session_state:
-            st.session_state.parental_settings = {
-                'enabled': False,
-                'pin': None,
-                'daily_time_limit': 60,  # minutes
-                'time_used_today': 0,
-                'last_reset': datetime.now().date(),
-                'safe_mode': True,
-                'difficulty_level': 'beginner',
-                'allow_code_execution': True,
-                'require_quiz_passing': True,
-                'email_reports': False,
-                'parent_email': None
-            }
+            # Try to load from database first
+            saved_settings = self.load_parental_settings(user_id)
+            if saved_settings:
+                st.session_state.parental_settings = saved_settings
+            else:
+                # Create new settings
+                st.session_state.parental_settings = {
+                    'enabled': False,
+                    'pin': None,
+                    'daily_time_limit': 60,
+                    'time_used_today': 0,
+                    'last_reset': datetime.now().date().isoformat(),
+                    'safe_mode': True,
+                    'difficulty_level': 'beginner',
+                    'allow_code_execution': True,
+                    'require_quiz_passing': True,
+                    'email_reports': False,
+                    'parent_email': None
+                }
+    
+    def save_parental_settings(self, user_id: str):
+        """Save parental settings to database"""
+        settings = st.session_state.parental_settings
+        settings_json = json.dumps(settings, default=str)
+        
+        try:
+            self.db.save_user_settings(user_id, 'parental_settings', settings_json)
+        except Exception as e:
+            print(f"Error saving parental settings to database: {e}")
+            # Fallback to file if database fails
+            os.makedirs('.studybot_data', exist_ok=True)
+            with open(f'.studybot_data/{user_id}_parental.json', 'w') as f:
+                json.dump(settings, f, default=str)
+    
+    def load_parental_settings(self, user_id: str) -> Optional[Dict]:
+        """Load parental settings from database"""
+        try:
+            settings_json = self.db.get_user_settings(user_id, 'parental_settings')
+            if settings_json:
+                settings = json.loads(settings_json)
+                # Convert date string back to date object if needed
+                if 'last_reset' in settings and isinstance(settings['last_reset'], str):
+                    settings['last_reset'] = datetime.fromisoformat(settings['last_reset']).date()
+                return settings
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Error loading parental settings from database: {e}")
+        
+        # Fallback to file if database fails
+        try:
+            with open(f'.studybot_data/{user_id}_parental.json', 'r') as f:
+                settings = json.load(f)
+                if 'last_reset' in settings and isinstance(settings['last_reset'], str):
+                    settings['last_reset'] = datetime.fromisoformat(settings['last_reset']).date()
+                return settings
+        except FileNotFoundError:
+            pass
+        
+        return None
     
     def check_time_limit(self) -> Dict[str, any]:
         """Check if student has exceeded daily time limit"""
         settings = st.session_state.parental_settings
         
+        # Convert string to date if needed
+        if isinstance(settings['last_reset'], str):
+            settings['last_reset'] = datetime.fromisoformat(settings['last_reset']).date()
+        
         # Reset timer if it's a new day
         if settings['last_reset'] != datetime.now().date():
             settings['time_used_today'] = 0
             settings['last_reset'] = datetime.now().date()
+            # SAVE TO DATABASE when resetting
+            self.save_parental_settings(st.session_state.user_id)
         
         time_remaining = settings['daily_time_limit'] - settings['time_used_today']
         
@@ -426,9 +529,11 @@ class ParentalControlManager:
         }
     
     def increment_session_time(self, minutes: int = 1):
-        """Increment time used in current session"""
+        """Increment time used in current session - UPDATED: Now saves to database"""
         if st.session_state.parental_settings['enabled']:
             st.session_state.parental_settings['time_used_today'] += minutes
+            # SAVE TO DATABASE every time we increment
+            self.save_parental_settings(st.session_state.user_id)
     
     def verify_parent_pin(self, pin: str) -> bool:
         """Verify parent PIN for accessing controls"""
@@ -454,8 +559,6 @@ class ParentalControlManager:
     
     def calculate_streak(self, user_id: str) -> int:
         """Calculate learning streak in days"""
-        # This would query your database for consecutive days of activity
-        # Simplified version:
         if 'streak' not in st.session_state:
             st.session_state.streak = 1
         return st.session_state.streak
@@ -482,7 +585,6 @@ class GamificationManager:
         """Award XP to the student"""
         st.session_state.xp += amount
         
-        # Check for level up
         old_level = st.session_state.level
         new_level = self.calculate_level(st.session_state.xp)
         
@@ -523,7 +625,6 @@ class GamificationManager:
             'perfect_score': {'title': '💯 Perfectionist', 'description': 'Get 100% on 3 quizzes!'},
         }
         
-        # Add achievement if earned and not already unlocked
         earned = None
         if achievement_type == 'module_complete' and value == 1:
             earned = 'first_module'
@@ -545,7 +646,7 @@ class GamificationManager:
         st.markdown("### 🏆 Your Achievements")
         
         if not st.session_state.achievements:
-            st.info("Start learning to unlock achievements! 🌟")
+            st.info("Start learning to unlock achievements!")
             return
         
         cols = st.columns(3)
@@ -557,7 +658,6 @@ class GamificationManager:
 
 class EnhancedStudyBotApp:
     def __init__(self):
-        # Initialize existing components
         self.db = DatabaseHandler()
         self.github_parser = GitHubParser()
         self.prompt_manager = PromptManager()
@@ -566,23 +666,29 @@ class EnhancedStudyBotApp:
         self.quiz_generator = QuizGenerator(self.openai_client, self.prompt_manager)
         self.code_evaluator = CodeEvaluator(self.openai_client)
         
-        # Initialize new managers
         self.parental_control = ParentalControlManager(self.db)
         self.gamification = GamificationManager()
         
-        # Initialize session state
         self.init_session_state()
         
     def init_session_state(self):
         """Initialize all session state variables"""
         if 'user_id' not in st.session_state:
-            st.session_state.user_id = f"user_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            st.session_state.user_id = get_or_create_user_id()
         
         if 'current_module' not in st.session_state:
             st.session_state.current_module = 0
             
         if 'chat_history' not in st.session_state:
-            st.session_state.chat_history = []
+    # LOAD CHAT HISTORY FROM DATABASE
+            if hasattr(self, 'db') and st.session_state.get('current_module') is not None:
+                saved_history = self.db.load_chat_history(
+                    st.session_state.user_id, 
+                    st.session_state.current_module
+                )
+                st.session_state.chat_history = saved_history if saved_history else []
+            else:
+                st.session_state.chat_history = []  
             
         if 'learning_mode' not in st.session_state:
             st.session_state.learning_mode = 'socratic'
@@ -602,7 +708,6 @@ class EnhancedStudyBotApp:
         if 'show_parent_panel' not in st.session_state:
             st.session_state.show_parent_panel = False
         
-        # Initialize parental controls and gamification
         self.parental_control.initialize_parental_settings(st.session_state.user_id)
         self.gamification.initialize_gamification()
     
@@ -618,7 +723,6 @@ class EnhancedStudyBotApp:
             </div>
             """, unsafe_allow_html=True)
         
-        # Display XP bar and level
         xp_info = self.gamification.get_xp_for_next_level()
         
         col1, col2, col3 = st.columns([1, 2, 1])
@@ -635,7 +739,6 @@ class EnhancedStudyBotApp:
             </div>
             """, unsafe_allow_html=True)
             
-            # Streak display
             if st.session_state.streak > 0:
                 st.markdown(f"""
                 <div style="text-align: center;">
@@ -652,21 +755,21 @@ class EnhancedStudyBotApp:
             st.rerun()
     
     def render_parental_dashboard(self):
-        """Render parental control dashboard"""
+        """Render parental control dashboard - FIX: Now saves PIN"""
         st.markdown('<div class="parent-panel">', unsafe_allow_html=True)
         st.markdown("### 👨‍👩‍👧 Parental Control Dashboard")
         
-        # PIN verification for first-time setup or access
         if not st.session_state.parental_settings.get('pin'):
             st.info("Set up parental controls with a 4-digit PIN")
             pin = st.text_input("Create PIN:", type="password", max_chars=4, key="setup_pin")
             if st.button("Set PIN") and len(pin) == 4:
                 st.session_state.parental_settings['pin'] = pin
                 st.session_state.parental_settings['enabled'] = True
-                st.success("✅ Parental controls activated!")
+                # SAVE TO DATABASE
+                self.parental_control.save_parental_settings(st.session_state.user_id)
+                st.success("✅ Parental controls activated and saved!")
                 st.rerun()
         else:
-            # PIN verification
             if 'pin_verified' not in st.session_state:
                 st.session_state.pin_verified = False
             
@@ -680,42 +783,56 @@ class EnhancedStudyBotApp:
                         st.error("❌ Incorrect PIN")
                 return
             
-            # Control Panel
             st.markdown("#### ⚙️ Settings")
             
             col1, col2 = st.columns(2)
             
             with col1:
-                st.session_state.parental_settings['daily_time_limit'] = st.slider(
+                new_limit = st.slider(
                     "Daily Time Limit (minutes):",
                     15, 180, 
                     st.session_state.parental_settings['daily_time_limit'],
                     step=15
                 )
+                if new_limit != st.session_state.parental_settings['daily_time_limit']:
+                    st.session_state.parental_settings['daily_time_limit'] = new_limit
+                    self.parental_control.save_parental_settings(st.session_state.user_id)
                 
-                st.session_state.parental_settings['safe_mode'] = st.checkbox(
+                new_safe_mode = st.checkbox(
                     "Safe Mode (Age-appropriate content)",
                     st.session_state.parental_settings['safe_mode']
                 )
+                if new_safe_mode != st.session_state.parental_settings['safe_mode']:
+                    st.session_state.parental_settings['safe_mode'] = new_safe_mode
+                    self.parental_control.save_parental_settings(st.session_state.user_id)
                 
-                st.session_state.parental_settings['allow_code_execution'] = st.checkbox(
+                new_code_exec = st.checkbox(
                     "Allow Code Execution",
                     st.session_state.parental_settings['allow_code_execution']
                 )
+                if new_code_exec != st.session_state.parental_settings['allow_code_execution']:
+                    st.session_state.parental_settings['allow_code_execution'] = new_code_exec
+                    self.parental_control.save_parental_settings(st.session_state.user_id)
             
             with col2:
-                st.session_state.parental_settings['difficulty_level'] = st.selectbox(
+                new_difficulty = st.selectbox(
                     "Difficulty Level:",
                     ['beginner', 'intermediate', 'advanced'],
                     index=['beginner', 'intermediate', 'advanced'].index(
                         st.session_state.parental_settings['difficulty_level']
                     )
                 )
+                if new_difficulty != st.session_state.parental_settings['difficulty_level']:
+                    st.session_state.parental_settings['difficulty_level'] = new_difficulty
+                    self.parental_control.save_parental_settings(st.session_state.user_id)
                 
-                st.session_state.parental_settings['require_quiz_passing'] = st.checkbox(
+                new_quiz_passing = st.checkbox(
                     "Require 80% to advance",
                     st.session_state.parental_settings['require_quiz_passing']
                 )
+                if new_quiz_passing != st.session_state.parental_settings['require_quiz_passing']:
+                    st.session_state.parental_settings['require_quiz_passing'] = new_quiz_passing
+                    self.parental_control.save_parental_settings(st.session_state.user_id)
             
             # Progress Report
             st.markdown("#### 📊 Progress Report")
@@ -766,6 +883,7 @@ class EnhancedStudyBotApp:
             with action_col2:
                 if st.button("🔄 Reset Daily Timer"):
                     st.session_state.parental_settings['time_used_today'] = 0
+                    self.parental_control.save_parental_settings(st.session_state.user_id)
                     st.success("Timer reset!")
         
         st.markdown('</div>', unsafe_allow_html=True)
@@ -788,7 +906,6 @@ class EnhancedStudyBotApp:
             """, unsafe_allow_html=True)
             st.stop()
         
-        # Warning at 10 minutes remaining
         if time_status['time_remaining'] <= 10 and time_status['time_remaining'] > 0:
             st.warning(f"⏰ Only {time_status['time_remaining']} minutes left today!")
     
@@ -822,17 +939,14 @@ class EnhancedStudyBotApp:
         """Render enhanced sidebar with progress and controls"""
         st.sidebar.title("📚 Learning Dashboard")
         
-        # Parent Control Button
         self.render_parent_control_button()
         
-        # Display Achievements Button
         if st.sidebar.button("🏆 View Achievements"):
             with st.sidebar:
                 self.gamification.display_achievements()
         
         st.sidebar.markdown("---")
         
-        # Get user progress
         modules = self.db.get_all_modules()
         user_progress = self.db.get_user_progress(st.session_state.user_id)
         
@@ -857,7 +971,6 @@ class EnhancedStudyBotApp:
                 is_unlocked = is_basic_module or is_progression_unlocked
                 
                 is_completed = any(p['module_id'] == module['id'] and p['completed'] for p in user_progress)
-                is_current = i == st.session_state.current_module
                 
                 status = "✅" if is_completed else "🔓" if is_unlocked else "🔒"
                 
@@ -874,7 +987,6 @@ class EnhancedStudyBotApp:
                         self.add_module_welcome_message(module)
                     st.rerun()
 
-        # Learning mode selector
         st.sidebar.markdown("### 🎯 Learning Mode")
         new_mode = st.sidebar.selectbox(
             "Choose your learning style:",
@@ -960,7 +1072,7 @@ class EnhancedStudyBotApp:
                     with st.chat_message("assistant", avatar="🤖"):
                         st.markdown(message['content'])
                 else:
-                    with st.chat_message("user", avatar="👨‍🎓"):
+                    with st.chat_message("user", avatar="👦"):
                         st.markdown(message['content'])
 
         if st.session_state.learning_mode == 'quiz' and not st.session_state.quiz_active:
@@ -1020,14 +1132,12 @@ class EnhancedStudyBotApp:
                 st.session_state.learning_mode
             )
             
-            # Award XP for interaction
             self.gamification.award_xp(5, "Asked a question")
 
     def render_coding_interface(self, current_module):
         """Render coding practice interface"""
         st.markdown("### 💻 Code Practice")
         
-        # Check if code execution is allowed
         if not st.session_state.parental_settings['allow_code_execution']:
             st.warning("⚠️ Code execution is disabled by parental controls.")
             return
@@ -1047,8 +1157,6 @@ class EnhancedStudyBotApp:
                     result = self.code_evaluator.evaluate_code(user_code, st.session_state.coding_exercise)
                     st.markdown("**Result:**")
                     st.code(result, language="python")
-                    
-                    # Award XP
                     self.gamification.award_xp(15, "Completed coding exercise")
                     
         with col2:
@@ -1096,41 +1204,33 @@ class EnhancedStudyBotApp:
     def generate_flashcards(self, module):
         """Generate flashcards for the current module"""
         module_title = module.get('title', 'Python')
-        content = module.get('content', [])
-        examples = module.get('code_examples', [])
         
         flashcards = []
         
         if 'introduction' in module_title.lower():
             flashcards = [
-                {"question": "What is Python? 🐍", "answer": "Python is a friendly programming language that's perfect for beginners. It's used to build websites, games, apps, and even control robots!"},
+                {"question": "What is Python?", "answer": "Python is a friendly programming language that's perfect for beginners. It's used to build websites, games, apps, and even control robots!"},
                 {"question": "Why is Python good for beginners?", "answer": "Python code is easy to read and write - it's almost like writing in English! Plus it's used by companies like Google and NASA."},
-                {"question": "What can you build with Python?", "answer": "You can build websites, games, mobile apps, robots, and solve real-world problems! The possibilities are endless! 🚀"}
+                {"question": "What can you build with Python?", "answer": "You can build websites, games, mobile apps, robots, and solve real-world problems! The possibilities are endless!"}
             ]
         elif 'data types' in module_title.lower():
             flashcards = [
-                {"question": "What is a string in Python? 📝", "answer": "A string is text enclosed in quotes, like 'Hello' or \"Python\". It's how we store words and sentences!"},
-                {"question": "What is an integer? 🔢", "answer": "An integer is a whole number like 5, 10, or 100. No decimal points allowed!"},
-                {"question": "How do you create a variable? 📦", "answer": "Just use: name = 'Alice' or age = 12. Variables are like labeled boxes to store information!"}
+                {"question": "What is a string in Python?", "answer": "A string is text enclosed in quotes, like 'Hello' or \"Python\". It's how we store words and sentences!"},
+                {"question": "What is an integer?", "answer": "An integer is a whole number like 5, 10, or 100. No decimal points allowed!"},
+                {"question": "How do you create a variable?", "answer": "Just use: name = 'Alice' or age = 12. Variables are like labeled boxes to store information!"}
             ]
         elif 'function' in module_title.lower():
             flashcards = [
-                {"question": "What is a function? ⚙️", "answer": "A function is like a recipe - it takes ingredients (inputs) and makes something (output). Use 'def' to create one!"},
-                {"question": "How do you call a function? 📞", "answer": "Just write the function name with parentheses: greet() or add_numbers(5, 3)"},
-                {"question": "What does 'return' do? ↩️", "answer": "Return gives back a result from your function, like return x + y gives back the sum!"}
+                {"question": "What is a function?", "answer": "A function is like a recipe - it takes ingredients (inputs) and makes something (output). Use 'def' to create one!"},
+                {"question": "How do you call a function?", "answer": "Just write the function name with parentheses: greet() or add_numbers(5, 3)"},
+                {"question": "What does 'return' do?", "answer": "Return gives back a result from your function, like return x + y gives back the sum!"}
             ]
         else:
             flashcards = [
-                {"question": f"What do we learn in {module_title}? 🤔", "answer": f"In {module_title}, we explore important Python concepts that help us become better programmers!"},
-                {"question": "How do you print in Python? 🖨️", "answer": "Use print('Hello World') - the print() function displays text on the screen!"},
-                {"question": "What makes Python special? ✨", "answer": "Python is easy to read, powerful, and fun to use! It's perfect for learning programming."}
+                {"question": f"What do we learn in {module_title}?", "answer": f"In {module_title}, we explore important Python concepts that help us become better programmers!"},
+                {"question": "How do you print in Python?", "answer": "Use print('Hello World') - the print() function displays text on the screen!"},
+                {"question": "What makes Python special?", "answer": "Python is easy to read, powerful, and fun to use! It's perfect for learning programming."}
             ]
-        
-        if examples:
-            flashcards.append({
-                "question": f"What does this code do? 💻\n{examples[0]}", 
-                "answer": "This is an example from our current module. Try running it to see what happens! 🎉"
-            })
         
         return flashcards
 
@@ -1155,45 +1255,17 @@ class EnhancedStudyBotApp:
         module_title = module.get('title', 'Python Learning')
         
         welcome_messages = {
-            'introduction': """🎉 Welcome to your Python journey! I'm so excited to learn with you!
-            
-Python is like having a magical language that lets you talk to computers! 🐍✨ Think of it like learning a new language, but instead of talking to people, you're giving instructions to computers.
-
-What would you like to explore first?""",
-            'data types': """📊 Time to explore the building blocks of Python - Data Types! 
-            
-Think of data types like different kinds of LEGO blocks 🧱 - each one has a special purpose!
-
-What's your favorite thing? Is it a word, a number, or maybe something true/false?""",
-            'data structures': """🗂️ Welcome to Data Structures!
-            
-Imagine your backpack 🎒 - you organize things in it, right? That's what data structures do!
-
-What do you like to collect or organize?""",
-            'function': """⚙️ Functions are here! These are like having superpowers!
-            
-Think of functions like recipes 👨‍🍳 - you give ingredients and get a result!
-
-What's your favorite recipe?""",
-            'loops': """🔄 Ready for Loops? These let us repeat actions!
-            
-Loops are like having a helpful robot 🤖 that does repetitive tasks!
-
-What would YOU want a computer to repeat for you?""",
-            'file': """📁 File Handling time! Now we can save our work!
-            
-Think of files like digital notebooks 📓!
-
-What would you like to save in a file?"""
+            'introduction': "Welcome to your Python journey! I'm so excited to learn with you!\n\nPython is like having a magical language that lets you talk to computers! What would you like to explore first?",
+            'data types': "Time to explore the building blocks of Python - Data Types!\n\nThink of data types like different kinds of LEGO blocks - each one has a special purpose!\n\nWhat's your favorite thing? Is it a word, a number, or maybe something true/false?",
+            'data structures': "Welcome to Data Structures!\n\nImagine your backpack - you organize things in it, right? That's what data structures do!\n\nWhat do you like to collect or organize?",
+            'function': "Functions are here! These are like having superpowers!\n\nThink of functions like recipes - you give ingredients and get a result!\n\nWhat's your favorite recipe?",
+            'loops': "Ready for Loops? These let us repeat actions!\n\nLoops are like having a helpful robot that does repetitive tasks!\n\nWhat would YOU want a computer to repeat for you?",
+            'file': "File Handling time! Now we can save our work!\n\nThink of files like digital notebooks!\n\nWhat would you like to save in a file?"
         }
         
         welcome_msg = next(
             (msg for key, msg in welcome_messages.items() if key in module_title.lower()),
-            f"""🌟 Welcome to {module_title}! 
-            
-I'm excited to explore this topic with you!
-
-What questions do you have?"""
+            f"Welcome to {module_title}!\n\nI'm excited to explore this topic with you!\n\nWhat questions do you have?"
         )
         
         st.session_state.chat_history.append({
@@ -1224,7 +1296,27 @@ What questions do you have?"""
                     del st.session_state[f'quiz_answer_{i}']
             
             st.rerun()
+    def save_chat_message_to_db(self, role: str, content: str):
+        """Save individual chat messages to database for persistence"""
+        if hasattr(self, 'db') and 'current_module' in st.session_state:
+            self.db.save_chat_message(
+                st.session_state.user_id,
+                st.session_state.current_module,
+                role,
+                content
+            )
 
+    def load_chat_history_from_db(self):
+        """Load chat history from database when switching modules"""
+        if hasattr(self, 'db') and 'current_module' in st.session_state:
+            saved_history = self.db.load_chat_history(
+                st.session_state.user_id,
+                st.session_state.current_module
+            )
+            if saved_history:
+                st.session_state.chat_history = saved_history
+                return True
+        return False
     def render_quiz_interface(self):
         """Render the quiz interface"""
         quiz = st.session_state.quiz_data
@@ -1250,7 +1342,7 @@ What questions do you have?"""
                         st.session_state.current_question += 1
                         st.rerun()
                 elif st.session_state[f'quiz_answer_{current_q}'] is not None:
-                    st.success(f"✅ Answer submitted!")
+                    st.success("✅ Answer submitted!")
                     
             else:
                 answer = st.text_area("Your answer:", key=f"q_text_{current_q}", height=100)
@@ -1263,7 +1355,7 @@ What questions do you have?"""
                         st.session_state.current_question += 1
                         st.rerun()
                 elif st.session_state[f'quiz_answer_{current_q}'] is not None:
-                    st.success(f"✅ Answer submitted!")
+                    st.success("✅ Answer submitted!")
         else:
             self.show_quiz_results()
 
@@ -1291,7 +1383,6 @@ What questions do you have?"""
                 score=percentage
             )
             
-            # Award XP and check achievements
             self.gamification.award_xp(50, "Passed module quiz!")
             self.gamification.check_achievements('module_complete', len([m for m in modules if m.get('completed')]))
             if percentage == 100:
@@ -1318,10 +1409,8 @@ What questions do you have?"""
 
     def run(self):
         """Main application runner"""
-        # Check time limit first
         if st.session_state.parental_settings['enabled']:
             self.check_time_limit_warning()
-            # Increment session time (simplified - in production use actual timing)
             if 'last_time_check' not in st.session_state:
                 st.session_state.last_time_check = datetime.now()
             
@@ -1332,7 +1421,6 @@ What questions do you have?"""
         
         self.render_header()
         
-        # Show parental dashboard if requested
         if st.session_state.show_parent_panel:
             self.render_parental_dashboard()
             return
@@ -1344,7 +1432,6 @@ What questions do you have?"""
         self.render_chat_interface()
 
 
-# Main execution
 if __name__ == "__main__":
     app = EnhancedStudyBotApp()
     app.run()

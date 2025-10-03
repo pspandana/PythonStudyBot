@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS learning_interactions (
     FOREIGN KEY (module_id) REFERENCES modules (id)
 );
 
+-- User settings table - for parental controls and other user preferences
+CREATE TABLE IF NOT EXISTS user_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    setting_key TEXT NOT NULL,
+    setting_value TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, setting_key)
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_progress_module_id ON user_progress(module_id);
@@ -75,6 +86,7 @@ CREATE INDEX IF NOT EXISTS idx_difficult_topics_user_module ON difficult_topics(
 CREATE INDEX IF NOT EXISTS idx_quiz_results_user_id ON quiz_results(user_id);
 CREATE INDEX IF NOT EXISTS idx_learning_interactions_user_id ON learning_interactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_modules_order ON modules(order_index);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user_key ON user_settings(user_id, setting_key);
 
 -- Sample data (optional - for testing)
 INSERT OR IGNORE INTO modules (id, title, description, content, code_examples, exercises, order_index, github_path) 
