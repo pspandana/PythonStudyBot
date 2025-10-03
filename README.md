@@ -1,18 +1,10 @@
 # 🤖 StudyBot - AI-Powered Python Learning Platform
-********* Presentation Link ***********
-https://gamma.app/docs/Introducing-Codey-Your-Childs-Python-Learning-Companion-68nyx5iwbv63i8f?mode=doc
 
+**🏆 3rd Place Winner - Hackathon 2024**
 
+**[View Hackathon Presentation](https://gamma.app/docs/Introducing-Codey-Your-Childs-Python-Learning-Companion-68nyx5iwbv63i8f?mode=doc)**
 
 > **An intelligent, mobile-first educational platform that combines OpenAI's GPT, GitHub content parsing, and Streamlit's web framework to create personalized Python tutoring experiences.**
-
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.29.0-red)](https://streamlit.io)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5--turbo-green)](https://openai.com)
-[![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)](https://sqlite.org)
-[![Mobile](https://img.shields.io/badge/Mobile-Responsive-purple)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
-
----
 
 ## 🌟 **Key Features**
 
@@ -24,9 +16,9 @@ https://gamma.app/docs/Introducing-Codey-Your-Childs-Python-Learning-Companion-6
 
 ### 📱 **Mobile-First Design**
 - **Responsive Interface**: Works seamlessly on phones, tablets, and desktops
-- **Progressive Web App**: Add to home screen like native mobile apps
 - **Touch-Friendly UI**: 44px minimum button sizes following Apple guidelines
 - **Auto-Collapsing Sidebar**: Optimized navigation for small screens
+- **iOS Keyboard Fix**: 16px inputs prevent auto-zoom on mobile devices
 
 ### 💾 **Session Persistence**
 - **Cross-Session Memory**: Conversations persist across browser sessions
@@ -42,6 +34,32 @@ https://gamma.app/docs/Introducing-Codey-Your-Childs-Python-Learning-Companion-6
 
 ---
 
+## 📸 **Screenshots**
+
+### 🏠 **Landing Page**
+![Landing Page](screenshots/landing_page.png)
+*Clean, intuitive interface with easy navigation to learning modules*
+
+### 💬 **Interactive Chat Interface**
+![Chat Interface](screenshots/chat.png)
+*AI-powered conversations with real-time code execution and feedback*
+
+### 🔒 **Parental Controls**
+![Parental PIN Setup](screenshots/parent_creating_pin.png)
+*Secure PIN-based parental controls with time limits and content filtering*
+
+### ⭐ **Feature Overview**
+![Features](screenshots/features.png)
+*Comprehensive learning tools and progress tracking*
+
+### 📱 **Mobile-Responsive Design**
+![Parent Dashboard](screenshots/Screenshot%202025-10-03%20122302.png)
+*Optimized for parents *
+
+### 🛠️ **Code Sandbox**
+![Code Sandbox](screenshots/sandbox.png)
+*Interactive Python code editor with real-time execution and output*
+
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
@@ -53,7 +71,7 @@ https://gamma.app/docs/Introducing-Codey-Your-Childs-Python-Learning-Companion-6
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/StudyBot.git
+git clone https://github.com/pspandana/PythonStudyBot.git
 cd StudyBot/PythonStudyBot
 
 # Install dependencies
@@ -74,7 +92,7 @@ streamlit run app.py
 
 ---
 
-## 🏗️ **Architecture Overview**
+## 🗂️ **Architecture Overview**
 
 ```
 StudyBot/
@@ -489,7 +507,7 @@ def render_project_mode(self, current_module):
 
 ---
 
-## 📱 **Mobile Deployment**
+## 📱 **Web Deployment**
 
 ### **Streamlit Cloud Deployment**
 
@@ -502,28 +520,33 @@ git push origin main
 # 2. Deploy to Streamlit Cloud
 # - Visit share.streamlit.io
 # - Connect GitHub repository
-# - Set secrets: OPENAI_API_KEY
+# - Set secrets: OPENAI_API_KEY (optional)
 # - Deploy!
 
-# 3. Your app will be available at:
+# Your app will be available at:
 # https://your-app-name.streamlit.app
 ```
 
-### **Adding to Mobile Home Screen**
+### **Testing on Mobile Devices**
 
-**iOS (Safari):**
-1. Open StudyBot in Safari
-2. Tap the Share button
-3. Select "Add to Home Screen"
-4. Name it "StudyBot"
-5. Tap "Add"
+**Same WiFi Method:**
+```bash
+# Streamlit shows network URL when running:
+Network URL: http://192.168.1.XXX:8501
 
-**Android (Chrome):**
-1. Open StudyBot in Chrome
-2. Tap the menu (⋮)
-3. Select "Add to Home screen"
-4. Confirm the name
-5. Tap "Add"
+# Open this URL on your phone (same WiFi)
+```
+
+**External Access (ngrok):**
+```bash
+# Install ngrok
+npm install -g ngrok
+
+# While Streamlit is running:
+ngrok http 8501
+
+# Use the https URL on any device
+```
 
 ---
 
@@ -802,10 +825,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### **Getting Help**
 
-- 📧 **Email**: support@studybot.dev
-- 💬 **Discord**: [Join our community](https://discord.gg/studybot)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/your-username/StudyBot/issues)
-- 📖 **Docs**: [Full Documentation](https://studybot.readthedocs.io)
+- **Issues**: [GitHub Issues](https://github.com/your-username/StudyBot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-username/StudyBot/discussions)
 
 ### **FAQ**
 
@@ -831,4 +852,3 @@ A: Partially - fallback content and core features work offline.
 
 *Made with ❤️ for the Python learning community*
 
-</div>
