@@ -427,3 +427,25 @@ class DatabaseHandler:
             """.format(days_old))
             
             conn.commit()
+    def save_user_settings(self, user_id: str, setting_key: str, setting_value: str):
+        """Save or update a user setting"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO user_settings (user_id, setting_key, setting_value, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id, setting_key) 
+                DO UPDATE SET setting_value = ?, updated_at = CURRENT_TIMESTAMP
+            """, (user_id, setting_key, setting_value, setting_value))
+            conn.commit()
+
+    def get_user_settings(self, user_id: str, setting_key: str) -> Optional[str]:
+        """Get a specific user setting"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT setting_value FROM user_settings 
+                WHERE user_id = ? AND setting_key = ?
+            """, (user_id, setting_key))
+            result = cursor.fetchone()
+            return result[0] if result else None

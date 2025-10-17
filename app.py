@@ -3,7 +3,8 @@ import os
 from datetime import datetime, timedelta
 import json
 from typing import Optional, Dict, List
-
+# Add after existing imports
+from auth.auth_handler import AuthHandler
 # Import custom modules
 from database.db_handler import DatabaseHandler
 from content.github_parser import GitHubParser
@@ -37,11 +38,10 @@ st.set_page_config(
         'About': "StudyBot - Your Python Learning Buddy! 🐍✨"
     }
 )
-
-# Enhanced CSS with FIXES for chat input covering and kid-friendly design
+# Fun, kid-friendly CSS design with animations!
 st.markdown("""
 <style>
-/* Modern Color Palette */
+/* Fun Color Palette for Kids */
 :root {
     --primary: #667eea;
     --secondary: #764ba2;
@@ -49,391 +49,360 @@ st.markdown("""
     --warning: #f6ad55;
     --danger: #fc8181;
     --info: #4299e1;
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-/* Animated Background */
+/* Animated Space Background */
 .stApp {
-    background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
     background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
+    animation: spaceGradient 15s ease infinite;
 }
 
-@keyframes gradientShift {
+@keyframes spaceGradient {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
-/* === FIX 1: Main Container with bottom padding for chat input === */
+/* Main Container with fun styling */
 .main .block-container {
     padding: 2rem;
     padding-bottom: 150px !important;
     max-width: 1400px;
+    position: relative;
+    z-index: 1;
 }
 
-/* === FIX 2: Chat container spacing === */
-div[data-testid="stChatMessageContainer"] {
-    padding-bottom: 120px !important;
-    margin-bottom: 20px;
+/* Make sure all content is visible */
+.main .block-container > div {
+    position: relative;
+    z-index: 2;
 }
 
-/* === FIX 3: Kid-friendly bigger text in chat === */
+/* Chat Messages - Fun bubbles! */
 .stChatMessage {
-    font-size: 20px !important;
-    line-height: 1.8 !important;
-    padding: 1.5rem !important;
+    font-size: 16px !important;
+    line-height: 1.7 !important;
+    padding: 1.2rem !important;
     border-radius: 20px !important;
-    margin: 1rem 0 !important;
+    margin: 0.8rem 0 !important;
+    animation: popIn 0.4s ease;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+    position: relative;
+    z-index: 5;
 }
 
-/* === FIX 4: Colorful, friendly chat input === */
-.stChatInput {
-    margin-top: 20px;
+@keyframes popIn {
+    0% { transform: scale(0.9) translateY(10px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
+/* Bot messages - Purple gradient with emoji */
+div[data-testid="stChatMessage-assistant"] {
+    background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%) !important;
+    border-left: 5px solid #667eea !important;
+    border-top: 3px solid rgba(255,255,255,0.5);
+}
+
+/* User messages - Pink/Blue gradient */
+div[data-testid="stChatMessage-user"] {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%) !important;
+    border-left: 5px solid #fd79a8 !important;
+    border-top: 3px solid rgba(255,255,255,0.5);
+}
+
+/* Chat Input - Fun colorful border */
 .stChatInput textarea {
     font-size: 18px !important;
     border-radius: 25px !important;
     border: 3px solid #48bb78 !important;
     padding: 15px 20px !important;
     min-height: 60px !important;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    position: relative;
+    z-index: 10;
 }
 
-/* === FIX 5: Fun avatar colors === */
-div[data-testid="chatAvatarIcon-assistant"] {
-    background: linear-gradient(135deg, #48bb78, #38a169) !important;
-    border-radius: 50%;
+.stChatInput textarea:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5) !important;
 }
 
-div[data-testid="chatAvatarIcon-user"] {
-    background: linear-gradient(135deg, #4299e1, #2b6cb0) !important;
-    border-radius: 50%;
-}
-
-/* Glass-morphism Cards */
-.glass-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: var(--card-shadow);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.glass-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-}
-
-/* Header with Animation */
-.main-header {
-    background: var(--bg-gradient);
-    padding: 2rem;
-    border-radius: 20px;
-    color: white;
-    text-align: center;
-    margin-bottom: 2rem;
-    box-shadow: var(--card-shadow);
-    animation: fadeInDown 0.8s ease;
-}
-
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.main-header h1 {
-    font-size: 2.5rem;
-    margin: 0;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Sidebar Enhancements */
-.css-1d391kg {
-    background: rgba(255, 255, 255, 0.95);
-}
-
-/* Module Cards */
-.module-card {
-    background: white;
-    border-radius: 15px;
-    padding: 1rem;
-    margin: 0.5rem 0;
-    border-left: 5px solid var(--primary);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.module-card:hover {
-    transform: translateX(5px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-}
-
-.module-card.completed {
-    border-left-color: var(--success);
-    background: linear-gradient(to right, rgba(72, 187, 120, 0.1), white);
-}
-
-.module-card.locked {
-    opacity: 0.6;
-    border-left-color: #cbd5e0;
-}
-
-/* Progress Bar with Animation */
-.progress-container {
-    background: #e2e8f0;
-    border-radius: 20px;
-    height: 30px;
-    overflow: hidden;
-    margin: 1rem 0;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.progress-fill {
-    background: var(--bg-gradient);
-    height: 100%;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.9rem;
-    transition: width 1s ease;
-}
-
-/* Chat Messages */
-.chat-message {
-    padding: 1.5rem;
-    border-radius: 20px;
-    margin: 1rem 0;
-    animation: fadeIn 0.5s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    font-size: 18px;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.bot-message {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    border-left: 5px solid var(--primary);
-}
-
-.user-message {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-    border-left: 5px solid var(--info);
-}
-
-/* Buttons */
+/* Buttons - Fun and bouncy! */
 .stButton > button {
-    min-height: 50px;
-    font-size: 1rem;
-    border-radius: 15px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    border: none;
-    background: var(--bg-gradient);
-    color: white;
+    border-radius: 15px !important;
+    padding: 0.6rem 1.2rem !important;
+    font-weight: 600 !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
 }
 
 .stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5) !important;
 }
 
-/* Achievement Badges */
-.achievement-badge {
-    display: inline-block;
-    background: var(--bg-gradient);
-    color: white;
-    padding: 0.5rem 1rem;
+/* Progress Bar - Animated rainbow! */
+.progress-container {
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
-    margin: 0.3rem;
-    font-size: 0.9rem;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
-    animation: bounceIn 0.6s ease;
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-/* XP Bar */
-.xp-container {
-    background: #e2e8f0;
-    border-radius: 15px;
-    height: 25px;
-    overflow: hidden;
+    height: 36px;
     margin: 1rem 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
     position: relative;
+    overflow: visible;
 }
 
-.xp-fill {
-    background: linear-gradient(90deg, #f6ad55, #fc8181);
+.progress-fill {
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+    background-size: 200%;
     height: 100%;
-    transition: width 1s ease;
-    position: relative;
-}
-
-.xp-sparkle {
+    border-radius: 18px;
+    animation: shimmer 3s linear infinite;
     position: absolute;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-    animation: sparkle 2s infinite;
+    top: 0;
+    left: 0;
 }
 
-@keyframes sparkle {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+/* Progress text overlay - always visible */
+.progress-container::after {
+    content: attr(data-progress);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #2c3e50;
+    font-weight: bold;
+    font-size: 0.95rem;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+    z-index: 2;
+    pointer-events: none;
 }
 
-/* Stats Cards */
+@keyframes shimmer {
+    0% { background-position: 0%; }
+    100% { background-position: 200%; }
+}
+
+/* Sidebar - Colorful Space Theme! */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+    position: relative;
+    z-index: 100;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+    border-right: 2px solid rgba(255,255,255,0.2);
+}
+
+[data-testid="stSidebar"] h1 {
+    font-size: 1.2rem !important;
+    font-weight: 700;
+    color: white !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin-bottom: 0.5rem !important;
+    padding: 0.5rem 0 !important;
+}
+
+[data-testid="stSidebar"] h3 {
+    font-size: 0.95rem !important;
+    font-weight: 600;
+    color: #ffeaa7 !important;
+    margin-top: 0.8rem !important;
+    margin-bottom: 0.4rem !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    padding: 0.2rem 0 !important;
+    overflow: visible !important;
+    white-space: normal !important;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+    font-size: 0.85rem !important;
+    padding: 0.4rem 0.7rem !important;
+    min-height: 35px !important;
+    margin: 0.2rem 0 !important;
+    background: rgba(255,255,255,0.2) !important;
+    color: white !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(255,255,255,0.3) !important;
+    transform: translateX(5px) !important;
+    border-color: rgba(255,255,255,0.5) !important;
+}
+
+[data-testid="stSidebar"] p {
+    font-size: 0.85rem !important;
+    margin: 0.25rem 0 !important;
+    color: rgba(255,255,255,0.95) !important;
+}
+
+/* Sidebar selectbox - colorful */
+[data-testid="stSidebar"] .stSelectbox {
+    font-size: 0.85rem !important;
+}
+
+[data-testid="stSidebar"] .stSelectbox label {
+    font-size: 0.85rem !important;
+    margin-bottom: 0.2rem !important;
+    color: white !important;
+}
+
+[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
+    background: rgba(255,255,255,0.2) !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+/* Compact markdown in sidebar */
+[data-testid="stSidebar"] .stMarkdown {
+    margin: 0.25rem 0 !important;
+    color: white !important;
+}
+
+[data-testid="stSidebar"] hr {
+    margin: 0.6rem 0 !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+/* Stats Cards - Colorful! */
 .stat-card {
-    background: white;
-    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
     padding: 1.5rem;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    transition: transform 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    animation: floatUp 3s ease-in-out infinite;
 }
 
-.stat-card:hover {
-    transform: scale(1.05);
+@keyframes floatUp {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
 }
 
 .stat-value {
     font-size: 2.5rem;
     font-weight: bold;
-    background: var(--bg-gradient);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-.stat-label {
-    color: #718096;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-}
-
-/* Parental Control Panel */
-.parent-panel {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Achievement Badges - Bouncy! */
+.achievement-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f6ad55, #fc8181);
     color: white;
-    padding: 2rem;
-    border-radius: 20px;
-    margin: 1rem 0;
-    box-shadow: var(--card-shadow);
-}
-
-.parent-panel h3 {
-    color: white;
-    margin-bottom: 1rem;
-}
-
-/* Time Limit Warning */
-.time-warning {
-    background: linear-gradient(135deg, #fc8181 0%, #f6ad55 100%);
-    color: white;
-    padding: 1rem;
-    border-radius: 15px;
-    text-align: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    margin: 0.3rem;
     font-weight: bold;
-    animation: pulse 2s infinite;
+    box-shadow: 0 4px 15px rgba(252, 129, 129, 0.4);
+    animation: bounce 2s infinite;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .main .block-container {
-        padding: 1rem 0.5rem;
-        padding-bottom: 180px !important;
-    }
-    
-    .main-header h1 {
-        font-size: 1.8rem;
-    }
-    
-    .stat-value {
-        font-size: 1.8rem;
-    }
-    
-    .stChatMessage {
-        font-size: 18px !important;
-    }
-}
-
-/* Input Fields - iOS fix */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea {
-    font-size: 16px !important;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    transition: border-color 0.3s ease;
-}
-
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-/* Streak Counter */
+/* Streak Badge - Fire animation! */
 .streak-badge {
     display: inline-flex;
     align-items: center;
     background: linear-gradient(135deg, #fc8181 0%, #f6ad55 100%);
     color: white;
-    padding: 0.7rem 1.2rem;
-    border-radius: 25px;
+    padding: 0.8rem 1.5rem;
+    border-radius: 30px;
     font-weight: bold;
-    box-shadow: 0 4px 15px rgba(252, 129, 129, 0.3);
-    animation: flameFlicker 1.5s infinite;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 20px rgba(252, 129, 129, 0.5);
+    animation: fireGlow 1.5s infinite;
 }
 
-@keyframes flameFlicker {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+@keyframes fireGlow {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(252, 129, 129, 0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 6px 30px rgba(252, 129, 129, 0.8); }
 }
 
-/* Loading Animation */
-.loading-spinner {
-    display: inline-block;
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(102, 126, 234, 0.3);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+/* XP Bar - Sparkling! */
+.xp-fill {
+    background: linear-gradient(90deg, #f6ad55, #fc8181, #f093fb);
+    background-size: 200%;
+    animation: sparkleMove 2s linear infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+@keyframes sparkleMove {
+    0% { background-position: 0%; }
+    100% { background-position: 200%; }
+}
+
+/* Success/Info/Warning Messages - Colorful! */
+.stSuccess {
+    background: linear-gradient(135deg, #b7f8db 0%, #50d890 100%) !important;
+    border-radius: 15px !important;
+    padding: 1rem !important;
+    border-left: 5px solid #27ae60 !important;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3) !important;
+    animation: slideIn 0.4s ease !important;
+}
+
+.stInfo {
+    background: linear-gradient(135deg, #d4f1f4 0%, #75d7f0 100%) !important;
+    border-radius: 15px !important;
+    padding: 1rem !important;
+    border-left: 5px solid #3498db !important;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3) !important;
+    animation: slideIn 0.4s ease !important;
+}
+
+.stWarning {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%) !important;
+    border-radius: 15px !important;
+    padding: 1rem !important;
+    border-left: 5px solid #f39c12 !important;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3) !important;
+    animation: slideIn 0.4s ease !important;
+}
+
+.stError {
+    background: linear-gradient(135deg, #fab1a0 0%, #ff7675 100%) !important;
+    border-radius: 15px !important;
+    padding: 1rem !important;
+    border-left: 5px solid #e74c3c !important;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3) !important;
+    animation: slideIn 0.4s ease !important;
+}
+
+@keyframes slideIn {
+    0% { transform: translateX(-20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Ensure notifications are visible */
+div[data-baseweb="notification"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding: 1rem !important;
+        padding-bottom: 180px !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
+
+
+
+
 
 
 class ParentalControlManager:
@@ -659,6 +628,7 @@ class GamificationManager:
 class EnhancedStudyBotApp:
     def __init__(self):
         self.db = DatabaseHandler()
+        self.auth = AuthHandler()  # NEW: Add auth handler
         self.github_parser = GitHubParser()
         self.prompt_manager = PromptManager()
         self.openai_client = OpenAIClient()
@@ -712,42 +682,35 @@ class EnhancedStudyBotApp:
         self.gamification.initialize_gamification()
     
     def render_header(self):
-        """Render enhanced animated header"""
-        col1, col2, col3 = st.columns([2, 3, 2])
-        
-        with col2:
-            st.markdown("""
-            <div class="main-header">
-                <h1>🤖 StudyBot</h1>
-                <p>Your Python Learning Adventure! 🐍✨</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
+        """Render fun, compact header for kids!"""
         xp_info = self.gamification.get_xp_for_next_level()
         
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown(f"""
-            <div style="text-align: center; margin-bottom: 1rem;">
-                <h3 style="color: white;">Level {st.session_state.level} 🌟</h3>
-                <div class="xp-container">
-                    <div class="xp-fill" style="width: {xp_info['percentage']}%;">
-                        <div class="xp-sparkle"></div>
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.95) 100%); padding: 0.8rem 1.5rem; border-radius: 20px; margin-bottom: 1rem; box-shadow: 0 6px 20px rgba(0,0,0,0.15); border: 3px solid rgba(255,255,255,0.5);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1; min-width: 200px;">
+                    <h2 style="margin: 0; font-size: 1.4rem; color: #667eea; font-weight: 700;">
+                        🤖 StudyBot <span style="font-size: 0.8rem; color: #999;">| Python Adventure 🐍</span>
+                    </h2>
+                </div>
+                <div style="flex: 1; min-width: 250px; text-align: center;">
+                    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(102,126,234,0.1); padding: 0.4rem 1rem; border-radius: 15px;">
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #667eea;">⭐ Level {st.session_state.level}</span>
+                        <span style="color: #666;">|</span>
+                        <span style="font-size: 0.9rem; color: #666;">{int(xp_info['current'])}/{int(xp_info['needed'])} XP</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); border-radius: 10px; height: 8px; margin-top: 0.4rem; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, #667eea, #764ba2, #f093fb); height: 100%; width: {xp_info['percentage']}%; transition: width 0.5s ease;"></div>
                     </div>
                 </div>
-                <p style="color: white;">{int(xp_info['current'])} / {int(xp_info['needed'])} XP</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if st.session_state.streak > 0:
-                st.markdown(f"""
-                <div style="text-align: center;">
-                    <span class="streak-badge">
+                <div style="flex: 0; text-align: right;">
+                    <span style="display: inline-flex; align-items: center; background: linear-gradient(135deg, #fc8181 0%, #f6ad55 100%); color: white; padding: 0.5rem 0.8rem; border-radius: 20px; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(252,129,129,0.4);">
                         🔥 {st.session_state.streak} Day Streak!
                     </span>
                 </div>
-                """, unsafe_allow_html=True)
-    
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     def render_parent_control_button(self):
         """Render parent control access button"""
         if st.sidebar.button("👨‍👩‍👧 Parent Dashboard", key="parent_btn"):
@@ -957,10 +920,8 @@ class EnhancedStudyBotApp:
             
             st.sidebar.markdown("### 📊 Your Progress")
             st.sidebar.markdown(f"""
-            <div class="progress-container">
-                <div class="progress-fill" style="width: {progress_percentage}%;">
-                    {completed_modules}/{total_modules} Complete
-                </div>
+            <div class="progress-container" data-progress="{completed_modules}/{total_modules} Complete">
+                <div class="progress-fill" style="width: {progress_percentage}%;"></div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1406,9 +1367,231 @@ class EnhancedStudyBotApp:
             if percentage < 80 and st.button("🔄 Retake Quiz"):
                 st.session_state.quiz_active = False
                 st.rerun()
+    def check_authentication(self) -> bool:
+        """Check if user is authenticated"""
+        # Initialize authentication state
+        if 'authenticated' not in st.session_state:
+            st.session_state.authenticated = False
+        
+        # Check for existing session token
+        if 'session_token' in st.session_state:
+            user_info = self.auth.validate_session(st.session_state.session_token)
+            if user_info:
+                st.session_state.authenticated = True
+                st.session_state.user_id = f"user_{user_info['user_id']}"
+                st.session_state.username = user_info['username']
+                st.session_state.display_name = user_info['display_name']
+                st.session_state.role = user_info['role']
+                st.session_state.db_user_id = user_info['user_id']  # Store numeric ID for DB
+                return True
+            else:
+                st.session_state.authenticated = False
+                return False
+        
+        return st.session_state.authenticated
 
+    def render_login_screen(self):
+        """Render login/signup screen"""
+        # Center the content
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            st.markdown("""
+            <div style="text-align: center; padding: 40px 0 20px 0;">
+                <h1 style="font-size: 3rem; margin: 0;">🤖 StudyBot</h1>
+                <p style="font-size: 1.3rem; color: #667eea; margin-top: 10px;">
+                    Your AI-Powered Python Learning Journey
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Tabs for Login and Sign Up
+            tab1, tab2 = st.tabs(["🔑 Login", "✨ Create Account"])
+            
+            with tab1:
+                st.markdown("### Welcome Back!")
+                with st.form("login_form", clear_on_submit=False):
+                    username = st.text_input(
+                        "Username",
+                        key="login_username",
+                        placeholder="Enter your username"
+                    )
+                    password = st.text_input(
+                        "Password",
+                        type="password",
+                        key="login_password",
+                        placeholder="Enter your password"
+                    )
+                    
+                    col_btn1, col_btn2 = st.columns(2)
+                    with col_btn1:
+                        submit = st.form_submit_button(
+                            "Login",
+                            use_container_width=True,
+                            type="primary"
+                        )
+                    with col_btn2:
+                        demo = st.form_submit_button(
+                            "Try Demo",
+                            use_container_width=True
+                        )
+                    
+                    if submit:
+                        if username and password:
+                            with st.spinner("Logging in..."):
+                                result = self.auth.authenticate_user(username, password)
+                            
+                            if result['success']:
+                                st.session_state.authenticated = True
+                                st.session_state.user_id = f"user_{result['user_id']}"
+                                st.session_state.username = result['username']
+                                st.session_state.display_name = result['display_name']
+                                st.session_state.role = result['role']
+                                st.session_state.session_token = result['session_token']
+                                st.session_state.db_user_id = result['user_id']
+                                st.rerun()
+                            else:
+                                st.error(result['message'])
+                        else:
+                            st.error("Please enter both username and password")
+                    
+                    if demo:
+                        # Create/login demo user
+                        demo_username = "demo_student"
+                        demo_password = "demo123"
+                        
+                        # Try to login first
+                        result = self.auth.authenticate_user(demo_username, demo_password)
+                        
+                        if not result['success']:
+                            # Create demo user if doesn't exist
+                            create_result = self.auth.create_user(
+                                username=demo_username,
+                                password=demo_password,
+                                display_name="Demo Student",
+                                role="student"
+                            )
+                            if create_result['success']:
+                                result = self.auth.authenticate_user(demo_username, demo_password)
+                        
+                        if result['success']:
+                            st.session_state.authenticated = True
+                            st.session_state.user_id = f"user_{result['user_id']}"
+                            st.session_state.username = result['username']
+                            st.session_state.display_name = result['display_name']
+                            st.session_state.role = result['role']
+                            st.session_state.session_token = result['session_token']
+                            st.session_state.db_user_id = result['user_id']
+                            st.rerun()
+            
+            with tab2:
+                st.markdown("### Join StudyBot!")
+                with st.form("signup_form", clear_on_submit=False):
+                    new_username = st.text_input(
+                        "Username*",
+                        key="signup_username",
+                        placeholder="Choose a username (min 3 characters)",
+                        help="Letters, numbers, _ and - only"
+                    )
+                    new_display_name = st.text_input(
+                        "Display Name",
+                        key="signup_display_name",
+                        placeholder="What should we call you?"
+                    )
+                    new_email = st.text_input(
+                        "Email (optional)",
+                        key="signup_email",
+                        placeholder="your.email@example.com"
+                    )
+                    new_password = st.text_input(
+                        "Password*",
+                        type="password",
+                        key="signup_password",
+                        placeholder="Create a password (min 6 characters)"
+                    )
+                    confirm_password = st.text_input(
+                        "Confirm Password*",
+                        type="password",
+                        key="signup_confirm",
+                        placeholder="Type password again"
+                    )
+                    
+                    role = st.selectbox(
+                        "I am a:",
+                        ["student", "parent", "teacher"],
+                        help="Choose your role"
+                    )
+                    
+                    submit = st.form_submit_button(
+                        "Create Account",
+                        use_container_width=True,
+                        type="primary"
+                    )
+                    
+                    if submit:
+                        if new_username and new_password:
+                            if new_password != confirm_password:
+                                st.error("❌ Passwords don't match!")
+                            else:
+                                with st.spinner("Creating your account..."):
+                                    result = self.auth.create_user(
+                                        username=new_username,
+                                        password=new_password,
+                                        email=new_email if new_email else None,
+                                        role=role,
+                                        display_name=new_display_name if new_display_name else new_username
+                                    )
+                                
+                                if result['success']:
+                                    st.success(result['message'])
+                                    st.info("✨ Please login with your new account!")
+                                    # Switch to login tab
+                                else:
+                                    st.error(result['message'])
+                        else:
+                            st.error("❌ Please fill in username and password")
+            
+            # Footer
+            st.markdown("""
+            <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666;">
+                <p>🐍 Learn Python through AI-powered Socratic tutoring</p>
+                <p style="font-size: 0.9rem;">🎮 Gamification • 📚 Flashcards • 🧪 Quizzes • 💻 Code Practice</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    def render_user_sidebar(self):
+        """Render user info and logout in sidebar"""
+        with st.sidebar:
+            st.markdown("---")
+            st.markdown(f"**👤 {st.session_state.display_name}**")
+            st.caption(f"@{st.session_state.username} • {st.session_state.role}")
+            
+            if st.button("🚪 Logout", use_container_width=True):
+                if 'session_token' in st.session_state:
+                    self.auth.logout(st.session_state.session_token)
+                
+                # Clear all session state
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                
+                st.rerun()
+    
     def run(self):
-        """Main application runner"""
+        """Main application runner with authentication"""
+        
+        # CHECK AUTHENTICATION FIRST
+        if not self.check_authentication():
+            self.render_login_screen()
+            return
+        
+        # Initialize/ensure parental settings exist for this user
+        if 'parental_settings' not in st.session_state:
+            self.parental_control.initialize_parental_settings(st.session_state.user_id)
+        
+        # Show user info in sidebar
+        self.render_user_sidebar()
+        
+        # Check time limits if parental controls enabled
         if st.session_state.parental_settings['enabled']:
             self.check_time_limit_warning()
             if 'last_time_check' not in st.session_state:
@@ -1430,8 +1613,6 @@ class EnhancedStudyBotApp:
             
         self.render_sidebar()
         self.render_chat_interface()
-
-
 if __name__ == "__main__":
     app = EnhancedStudyBotApp()
     app.run()
